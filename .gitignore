@@ -1,0 +1,10 @@
+cat > .gitignore <<'EOF'
+wordpress/wp-content/uploads/
+wordpress/wp-content/cache/
+wordpress/wp-content/upgrade/
+wordpress/wp-content/upgrade-temp-backup/
+wordpress/wp-content/debug.log
+wordpress/wp-config.php
+.DS_Store
+.env
+EOF
