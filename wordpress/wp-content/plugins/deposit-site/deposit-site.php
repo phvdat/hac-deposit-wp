@@ -1,17 +1,26 @@
 <?php
 /**
  * Plugin Name: Deposit Site
- * Description: Adds a deposit amount form that feeds the standard WooCommerce cart and checkout.
- * Version: 1.0.0
+ * Description: Standalone deposit amount form feeding the standard WooCommerce cart, checkout and CardShield PayPal gateway.
+ * Version: 2.0.0
+ * Text Domain: deposit-site
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const DEPOSIT_SITE_MIN_AMOUNT = 1;
-const DEPOSIT_SITE_MAX_AMOUNT = 1000;
-const DEPOSIT_SITE_PRODUCT_SKU = 'deposit-site';
+const DEPOSIT_SITE_DIR          = __DIR__ . '/';
+const DEPOSIT_SITE_MIN_AMOUNT   = 1;
+const DEPOSIT_SITE_MAX_AMOUNT   = 1000;
+const DEPOSIT_SITE_PRODUCT_SKU  = 'deposit-site';
+const DEPOSIT_SITE_VERSION      = '1.0.0';
+
+require_once DEPOSIT_SITE_DIR . 'templates/ui.php';
+
+/* -------------------------------------------------------------------------
+ * Helpers
+ * ---------------------------------------------------------------------- */
 
 function deposit_site_decimals() {
 	return function_exists( 'wc_get_price_decimals' ) ? wc_get_price_decimals() : 2;
@@ -21,6 +30,9 @@ function deposit_site_symbol() {
 	return function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : '$';
 }
 
+/**
+ * Lazily create (and remember) the hidden product used as the cart line item.
+ */
 function deposit_site_get_product_id() {
 	$product_id = (int) get_option( 'deposit_site_product_id', 0 );
 
@@ -62,6 +74,10 @@ function deposit_site_redirect_with_error( $code ) {
 	wp_safe_redirect( add_query_arg( 'deposit_error', $code, remove_query_arg( 'deposit_error', $back ) ) );
 	exit;
 }
+
+/* -------------------------------------------------------------------------
+ * Deposit form -> cart -> checkout
+ * ---------------------------------------------------------------------- */
 
 function deposit_site_handle_form() {
 	if ( empty( $_POST['deposit_site_submit'] ) ) {
@@ -123,6 +139,10 @@ function deposit_site_restore_cart_item( $cart_item, $values, $key ) {
 }
 add_filter( 'woocommerce_get_cart_item_from_session', 'deposit_site_restore_cart_item', 10, 3 );
 
+/**
+ * The entered amount is applied to the line item just before totals are
+ * calculated, so the cart, checkout and order all show the real deposit value.
+ */
 function deposit_site_apply_price( $cart ) {
 	if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
 		return;
@@ -139,6 +159,10 @@ function deposit_site_apply_price( $cart ) {
 }
 add_action( 'woocommerce_before_calculate_totals', 'deposit_site_apply_price', 20 );
 
+/**
+ * The deposit product must only ever reach the cart through the deposit form,
+ * otherwise it would be added as a free line item.
+ */
 function deposit_site_block_direct_add( $passed, $product_id ) {
 	if ( $product_id === (int) get_option( 'deposit_site_product_id', 0 ) ) {
 		wc_add_notice( __( 'Please enter a deposit amount first.', 'deposit-site' ), 'error' );
@@ -147,6 +171,10 @@ function deposit_site_block_direct_add( $passed, $product_id ) {
 	return $passed;
 }
 add_filter( 'woocommerce_add_to_cart_validation', 'deposit_site_block_direct_add', 10, 2 );
+
+/* -------------------------------------------------------------------------
+ * Checkout fields
+ * ---------------------------------------------------------------------- */
 
 function deposit_site_checkout_fields( $fields ) {
 	$keep = array( 'billing_first_name', 'billing_last_name', 'billing_email', 'billing_phone' );
@@ -170,6 +198,9 @@ function deposit_site_checkout_fields( $fields ) {
 }
 add_filter( 'woocommerce_checkout_fields', 'deposit_site_checkout_fields' );
 
+/**
+ * The address section is gone, so the order still needs a billing country.
+ */
 function deposit_site_set_billing_country( $order, $data ) {
 	if ( ! $order->get_billing_country() ) {
 		$location = wc_get_base_location();
@@ -181,81 +212,172 @@ function deposit_site_set_billing_country( $order, $data ) {
 }
 add_filter( 'woocommerce_checkout_create_order', 'deposit_site_set_billing_country', 10, 2 );
 
-function deposit_site_form() {
-	$decimals = deposit_site_decimals();
-	$symbol   = deposit_site_symbol();
-	$step     = number_format( pow( 10, -$decimals ), $decimals, '.', '' );
-	$min      = number_format( DEPOSIT_SITE_MIN_AMOUNT, $decimals, '.', '' );
-	$max      = number_format( DEPOSIT_SITE_MAX_AMOUNT, $decimals, '.', '' );
-	$limits   = sprintf(
-		/* translators: 1: minimum amount, 2: maximum amount */
-		__( 'Minimum %1$s%2$s &middot; Maximum %1$s%3$s', 'deposit-site' ),
-		$symbol,
-		number_format( DEPOSIT_SITE_MIN_AMOUNT, $decimals ),
-		number_format( DEPOSIT_SITE_MAX_AMOUNT, $decimals )
-	);
+/* -------------------------------------------------------------------------
+ * Presentation
+ * ---------------------------------------------------------------------- */
 
-	$messages = array(
-		'nonce'   => __( 'Your session has expired. Please try again.', 'deposit-site' ),
-		'invalid' => __( 'Please enter a valid deposit amount.', 'deposit-site' ),
-		'min'     => sprintf(
-			/* translators: %s: minimum amount */
-			__( 'The minimum deposit is %s.', 'deposit-site' ),
-			$symbol . number_format( DEPOSIT_SITE_MIN_AMOUNT, $decimals )
-		),
-		'max'     => sprintf(
-			/* translators: %s: maximum amount */
-			__( 'The maximum deposit is %s.', 'deposit-site' ),
-			$symbol . number_format( DEPOSIT_SITE_MAX_AMOUNT, $decimals )
-		),
-		'cart'    => __( 'We could not add the deposit to your cart. Please try again.', 'deposit-site' ),
-	);
-
+function deposit_site_form_shortcode() {
 	$error = isset( $_GET['deposit_error'] ) ? sanitize_key( wp_unslash( $_GET['deposit_error'] ) ) : '';
-	$error = isset( $messages[ $error ] ) ? $messages[ $error ] : '';
 
 	ob_start();
-	?>
-	<style>
-		.deposit-site-form{max-width:420px;margin:0 auto;padding:24px;border:1px solid #e3e3e3;border-radius:8px;background:#fff;font-size:16px;box-sizing:border-box}
-		.deposit-site-form *{box-sizing:border-box}
-		.deposit-site-form label{display:block;font-weight:600;margin:0 0 8px}
-		.deposit-site-error{margin:0 0 16px;padding:10px 12px;color:#b32d2e;background:#fcf0f1;border-left:4px solid #b32d2e}
-		.deposit-site-amount{display:flex;align-items:stretch;border:1px solid #ccc;border-radius:6px;overflow:hidden}
-		.deposit-site-amount span{display:flex;align-items:center;padding:0 14px;background:#f6f6f6;border-right:1px solid #ccc;color:#555}
-		.deposit-site-amount input{flex:1;min-width:0;padding:12px;border:0;font-size:16px;outline:none}
-		.deposit-site-form button{width:100%;margin-top:16px;padding:14px 16px;border:0;border-radius:6px;background:#2271b1;color:#fff;font-size:16px;cursor:pointer}
-		.deposit-site-form button:hover{background:#135e96}
-		.deposit-site-hint{margin:12px 0 0;color:#666;font-size:14px}
-		@media (max-width:480px){.deposit-site-form{padding:16px}}
-	</style>
-	<form class="deposit-site-form" method="post">
-		<?php wp_nonce_field( 'deposit_site_form', 'deposit_site_nonce' ); ?>
-		<?php if ( $error ) : ?>
-			<p class="deposit-site-error"><?php echo esc_html( $error ); ?></p>
-		<?php endif; ?>
-		<label for="deposit_amount"><?php esc_html_e( 'Deposit amount', 'deposit-site' ); ?></label>
-		<div class="deposit-site-amount">
-			<span><?php echo esc_html( $symbol ); ?></span>
-			<input
-				type="number"
-				id="deposit_amount"
-				name="deposit_amount"
-				value=""
-				min="<?php echo esc_attr( $min ); ?>"
-				max="<?php echo esc_attr( $max ); ?>"
-				step="<?php echo esc_attr( $step ); ?>"
-				inputmode="decimal"
-				required
-			/>
-		</div>
-		<button type="submit" name="deposit_site_submit" value="1"><?php esc_html_e( 'Proceed to checkout', 'deposit-site' ); ?></button>
-		<p class="deposit-site-hint"><?php echo wp_kses_post( $limits ); ?></p>
-	</form>
-	<?php
+	deposit_site_deposit_form( $error );
 	return ob_get_clean();
 }
-add_shortcode( 'deposit_form', 'deposit_site_form' );
+add_shortcode( 'deposit_form', 'deposit_site_form_shortcode' );
+
+function deposit_site_enqueue_assets() {
+	wp_enqueue_style(
+		'deposit-site',
+		plugins_url( 'assets/style.css', __FILE__ ),
+		array(),
+		DEPOSIT_SITE_VERSION
+	);
+}
+add_action( 'wp_enqueue_scripts', 'deposit_site_enqueue_assets' );
+
+/**
+ * Deposit page falls back to the site home, everything in the checkout flow
+ * falls back to the deposit page.
+ */
+function deposit_site_back_url() {
+	if ( function_exists( 'is_checkout' ) && ( is_checkout() || is_cart() ) ) {
+		$page_id = (int) get_option( 'deposit_site_page_id', 0 );
+		$url     = $page_id ? get_permalink( $page_id ) : '';
+		if ( $url ) {
+			return $url;
+		}
+	}
+	return home_url( '/' );
+}
+
+function deposit_site_render_back_header() {
+	deposit_site_header( deposit_site_back_url() );
+}
+add_action( 'wp_body_open', 'deposit_site_render_back_header' );
+
+/**
+ * Drop every core/template-part block (site header, footer, navigation, cart
+ * link, mini cart, customer account) so the plugin owns the page chrome.
+ */
+function deposit_site_suppress_chrome( $pre_render, $parsed_block ) {
+	if ( is_admin() ) {
+		return $pre_render;
+	}
+
+	if ( isset( $parsed_block['blockName'] ) && 'core/template-part' === $parsed_block['blockName'] ) {
+		return '';
+	}
+
+	return $pre_render;
+}
+add_filter( 'pre_render_block', 'deposit_site_suppress_chrome', 10, 2 );
+
+/**
+ * Coupon form removal. Must run after WooCommerce loads its template hooks on
+ * `init` priority 0.
+ */
+function deposit_site_remove_wc_ui_hooks() {
+	remove_action( 'woocommerce_before_checkout_form', 'woocommerce_checkout_coupon_form', 10 );
+}
+add_action( 'init', 'deposit_site_remove_wc_ui_hooks', 20 );
+
+/**
+ * WooCommerce serves the order-received endpoint from its own block template,
+ * which never renders the checkout page content. Drop that template from the
+ * hierarchy so the classic checkout shortcode runs and `checkout/thankyou.php`
+ * (routed to templates/ui.php above) is used instead.
+ */
+function deposit_site_force_classic_order_received( $templates ) {
+	if ( is_admin() ) {
+		return $templates;
+	}
+	return array_values( array_diff( $templates, array( 'order-confirmation' ) ) );
+}
+add_filter( 'page_template_hierarchy', 'deposit_site_force_classic_order_received', 2 );
+
+/* -------------------------------------------------------------------------
+ * Templates
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Route WooCommerce templates to this plugin's presentation files.
+ */
+function deposit_site_route_template( $template, $template_name ) {
+	if ( 'checkout/thankyou.php' === $template_name ) {
+		return DEPOSIT_SITE_DIR . 'templates/ui.php';
+	}
+
+	$customer_emails = array(
+		'emails/customer-processing-order.php',
+		'emails/customer-completed-order.php',
+		'emails/customer-on-hold-order.php',
+		'emails/customer-invoice.php',
+	);
+
+	if ( in_array( $template_name, $customer_emails, true ) ) {
+		return DEPOSIT_SITE_DIR . 'email.php';
+	}
+
+	return $template;
+}
+add_filter( 'wc_get_template', 'deposit_site_route_template', 10, 2 );
+
+/* -------------------------------------------------------------------------
+ * Email
+ * ---------------------------------------------------------------------- */
+
+function deposit_site_render_email( $order ) {
+	ob_start();
+	include DEPOSIT_SITE_DIR . 'email.php';
+	return ob_get_clean();
+}
+
+/**
+ * Send the deposit confirmation as soon as the order exists.
+ *
+ * Signature must match `do_action( 'woocommerce_checkout_order_processed',
+ * $order_id, $posted_data, $order )`.
+ */
+function deposit_site_send_confirmation_email( $order_id, $posted_data, $order ) {
+	unset( $posted_data );
+
+	if ( ! $order instanceof WC_Order ) {
+		$order = wc_get_order( $order_id );
+	}
+
+	if ( ! $order instanceof WC_Order ) {
+		return;
+	}
+
+	if ( ! $order->get_billing_email() ) {
+		return;
+	}
+
+	if ( 'yes' === $order->get_meta( '_deposit_confirmation_sent' ) ) {
+		return;
+	}
+
+	$order->update_meta_data( '_deposit_confirmation_sent', 'yes' );
+	$order->save();
+
+	$subject = sprintf(
+		/* translators: %s: order number */
+		__( 'Deposit order received - #%s', 'deposit-site' ),
+		$order->get_order_number()
+	);
+
+	wp_mail(
+		$order->get_billing_email(),
+		$subject,
+		deposit_site_render_email( $order ),
+		array( 'Content-Type: text/html; charset=UTF-8' )
+	);
+}
+add_action( 'woocommerce_checkout_order_processed', 'deposit_site_send_confirmation_email', 10, 3 );
+
+/* -------------------------------------------------------------------------
+ * Activation
+ * ---------------------------------------------------------------------- */
 
 function deposit_site_activate() {
 	update_option( 'woocommerce_coming_soon', 'no' );

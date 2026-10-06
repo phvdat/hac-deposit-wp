@@ -1,0 +1,839 @@
+/**
+ * Deposit Site - standalone dark UI for the deposit form, classic checkout and
+ * order-received confirmation.
+ */
+
+:root {
+	--ds-bg: #0e1116;
+	--ds-surface: #161b22;
+	--ds-surface-2: #1c232c;
+	--ds-border: #2a313c;
+	--ds-text: #e6edf3;
+	--ds-muted: #9aa4b2;
+	--ds-primary: #3b82f6;
+	--ds-primary-hover: #2563eb;
+	--ds-success: #22c55e;
+	--ds-warning: #f59e0b;
+	--ds-danger: #ef4444;
+	--ds-radius: 10px;
+	--ds-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html {
+	background: var(--ds-bg);
+}
+
+body {
+	margin: 0;
+	background: var(--ds-bg);
+	color: var(--ds-text);
+	font-family: var(--ds-font);
+	font-size: 16px;
+	line-height: 1.5;
+}
+
+body,
+.wp-site-blocks,
+.wp-site-blocks * {
+	box-sizing: border-box;
+}
+
+a {
+	color: var(--ds-primary);
+}
+
+a:hover,
+a:focus {
+	color: var(--ds-primary-hover);
+}
+
+h1,
+h2,
+h3,
+h4 {
+	color: var(--ds-text);
+	letter-spacing: -0.01em;
+}
+
+p {
+	color: var(--ds-text);
+}
+
+.screen-reader-text {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	word-wrap: normal !important;
+}
+
+/* -------------------------------------------------------------------------
+ * Header - Back button only. Theme header, footer and navigation are removed
+ * by the plugin (core/template-part blocks are suppressed).
+ * ---------------------------------------------------------------------- */
+
+.ds-header {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 20px;
+	background: rgba(14, 17, 22, 0.94);
+	border-bottom: 1px solid var(--ds-border);
+	backdrop-filter: blur(8px);
+}
+
+.ds-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 40px;
+	padding: 8px 16px;
+	border: 1px solid var(--ds-border);
+	border-radius: 999px;
+	background: var(--ds-surface);
+	color: var(--ds-text);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1;
+	text-decoration: none;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ds-back:hover,
+.ds-back:focus {
+	background: var(--ds-primary);
+	border-color: var(--ds-primary);
+	color: #fff;
+}
+
+/* -------------------------------------------------------------------------
+ * Shared card / button primitives
+ * ---------------------------------------------------------------------- */
+
+.ds-card {
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.ds-btn {
+	display: inline-block;
+	width: 100%;
+	margin: 0;
+	padding: 15px 18px;
+	border: 0;
+	border-radius: var(--ds-radius);
+	background: var(--ds-primary);
+	color: #fff;
+	font-family: var(--ds-font);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.ds-btn:hover,
+.ds-btn:focus {
+	background: var(--ds-primary-hover);
+	color: #fff;
+}
+
+.ds-error {
+	margin: 0 0 18px;
+	padding: 11px 14px;
+	border-left: 4px solid var(--ds-danger);
+	border-radius: 6px;
+	background: rgba(239, 68, 68, 0.12);
+	color: #fecaca;
+	font-size: 14px;
+}
+
+/* -------------------------------------------------------------------------
+ * Page shells
+ * ---------------------------------------------------------------------- */
+
+.page .wp-block-post-title {
+	margin: 36px auto 8px;
+	padding: 0 20px;
+	max-width: 480px;
+	font-size: 30px;
+	font-weight: 700;
+	text-align: center;
+}
+
+.page .wp-block-post-content {
+	max-width: 480px;
+	margin: 0 auto;
+	padding: 12px 20px 72px;
+}
+
+/* -------------------------------------------------------------------------
+ * Deposit form
+ * ---------------------------------------------------------------------- */
+
+.deposit-site-form {
+	margin: 0;
+	padding: 28px;
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.deposit-site-form label {
+	display: block;
+	margin: 0 0 10px;
+	color: var(--ds-text);
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.deposit-site-amount {
+	display: flex;
+	align-items: stretch;
+	overflow: hidden;
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+	background: var(--ds-surface-2);
+}
+
+.deposit-site-amount span {
+	display: flex;
+	align-items: center;
+	padding: 0 16px;
+	background: var(--ds-surface-2);
+	border-right: 1px solid var(--ds-border);
+	color: var(--ds-muted);
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.deposit-site-amount input {
+	flex: 1;
+	min-width: 0;
+	padding: 16px 14px;
+	border: 0;
+	background: transparent;
+	color: var(--ds-text);
+	font-family: var(--ds-font);
+	font-size: 24px;
+	font-weight: 600;
+	outline: none;
+	-moz-appearance: textfield;
+}
+
+.deposit-site-amount input::-webkit-outer-spin-button,
+.deposit-site-amount input::-webkit-inner-spin-button {
+	margin: 0;
+	-webkit-appearance: none;
+}
+
+.deposit-site-amount:focus-within {
+	border-color: var(--ds-primary);
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.deposit-site-form button {
+	margin-top: 18px;
+}
+
+.deposit-site-hint {
+	margin: 14px 0 0;
+	color: var(--ds-muted);
+	font-size: 13px;
+	text-align: center;
+}
+
+/* -------------------------------------------------------------------------
+ * Classic WooCommerce checkout
+ * ---------------------------------------------------------------------- */
+
+body.woocommerce-checkout .wp-block-post-content,
+body.woocommerce-cart .wp-block-post-content {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 24px 20px 72px;
+}
+
+.woocommerce form.checkout {
+	margin: 0;
+}
+
+.woocommerce form.checkout h2,
+.woocommerce form.checkout h3,
+#order_review h2,
+#order_review h3,
+.woocommerce-checkout .woocommerce-customer-details h2,
+.woocommerce-checkout .woocommerce-billing-fields h2 {
+	margin: 0 0 16px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--ds-border);
+	color: var(--ds-text);
+	font-size: 18px;
+	font-weight: 700;
+}
+
+.woocommerce form.checkout .form-row {
+	margin: 0 0 16px;
+	padding: 0;
+}
+
+.woocommerce form.checkout label {
+	margin-bottom: 6px;
+	color: var(--ds-text);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.woocommerce form.checkout .form-row label {
+	color: var(--ds-text);
+}
+
+.woocommerce form.checkout .form-row .optional {
+	color: var(--ds-muted);
+}
+
+.woocommerce form.checkout input.input-text,
+.woocommerce form.checkout textarea,
+.woocommerce form.checkout select,
+.woocommerce .select2-container--default .select2-selection--single,
+.woocommerce .select2-container--default .select2-selection--multiple {
+	width: 100%;
+	min-height: 46px;
+	margin: 0;
+	padding: 11px 13px;
+	border: 1px solid var(--ds-border);
+	border-radius: 8px;
+	background: var(--ds-surface-2);
+	color: var(--ds-text);
+	font-family: var(--ds-font);
+	font-size: 15px;
+	box-shadow: none;
+}
+
+.woocommerce form.checkout .select2-container--default .select2-selection--single {
+	height: 46px;
+	line-height: 24px;
+}
+
+.woocommerce form.checkout .select2-container--default .select2-selection--single .select2-selection__rendered {
+	color: var(--ds-text);
+	line-height: 24px;
+}
+
+.woocommerce form.checkout .select2-container--default .select2-selection--single .select2-selection__arrow {
+	height: 44px;
+}
+
+.woocommerce form.checkout input.input-text:focus,
+.woocommerce form.checkout textarea:focus,
+.woocommerce form.checkout select:focus {
+	border-color: var(--ds-primary);
+	background: var(--ds-surface-2);
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.woocommerce form.checkout textarea {
+	min-height: 110px;
+}
+
+.woocommerce form.checkout .woocommerce-invalid input.input-text,
+.woocommerce form.checkout .woocommerce-invalid textarea {
+	border-color: var(--ds-danger);
+}
+
+.woocommerce form.checkout .woocommerce-invalid .select2-container--default .select2-selection--single {
+	border-color: var(--ds-danger);
+}
+
+.woocommerce form.checkout .woocommerce-terms-and-privacy-wrapper,
+.woocommerce form.checkout #order_comments {
+	color: var(--ds-muted);
+	font-size: 14px;
+}
+
+/* Order notes ---------------------------------------------------------- */
+
+/*
+ * WooCommerce's `.woocommerce form .form-row .input-text` (woocommerce.css) sets
+ * a white background with higher specificity than the generic field rule above,
+ * so the order-notes textarea needs its own selector to stay on the dark theme.
+ */
+
+.woocommerce form.checkout .form-row .input-text#order_comments,
+.woocommerce form.checkout textarea#order_comments {
+	background: var(--ds-surface);
+	color: var(--ds-text);
+	border: 1px solid var(--ds-border);
+	border-radius: 8px;
+	padding: 11px 13px;
+	box-shadow: none;
+}
+
+.woocommerce form.checkout .form-row .input-text#order_comments::placeholder,
+.woocommerce form.checkout textarea#order_comments::placeholder {
+	color: var(--ds-muted);
+	opacity: 1;
+}
+
+.woocommerce form.checkout .form-row .input-text#order_comments:focus,
+.woocommerce form.checkout textarea#order_comments:focus {
+	background: var(--ds-surface);
+	border-color: var(--ds-primary);
+	color: var(--ds-text);
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Order review ---------------------------------------------------------- */
+
+#order_review {
+	margin-top: 28px;
+	padding: 22px;
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+}
+
+#order_review .woocommerce-checkout-review-order-table {
+	margin: 0;
+	background: transparent;
+	color: var(--ds-text);
+}
+
+#order_review .woocommerce-checkout-review-order-table th,
+#order_review .woocommerce-checkout-review-order-table td {
+	padding: 12px 8px;
+	border-top: 1px solid var(--ds-border);
+	background: transparent;
+	color: var(--ds-text);
+	font-weight: 500;
+}
+
+#order_review .woocommerce-checkout-review-order-table tr.cart-subtotal th,
+#order_review .woocommerce-checkout-review-order-table tr.cart-subtotal td,
+#order_review .woocommerce-checkout-review-order-table tr.order-total th,
+#order_review .woocommerce-checkout-review-order-table tr.order-total td {
+	border-top: 1px solid var(--ds-border);
+	color: var(--ds-text);
+	font-weight: 700;
+}
+
+#order_review .woocommerce-checkout-review-order-table tr.order-total .amount {
+	font-size: 20px;
+	color: var(--ds-primary);
+}
+
+#order_review .woocommerce-checkout-review-order-table td.product-name {
+	color: var(--ds-text);
+}
+
+/* Payment --------------------------------------------------------------- */
+
+#payment {
+	margin-top: 24px;
+	padding: 0;
+	background: var(--ds-surface-2);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+}
+
+#payment ul.payment_methods {
+	margin: 0;
+	padding: 18px;
+	border-bottom: 1px solid var(--ds-border);
+	list-style: none;
+}
+
+#payment ul.payment_methods li {
+	margin: 0 0 10px;
+	padding: 0;
+	color: var(--ds-text);
+}
+
+#payment ul.payment_methods li:last-child {
+	margin-bottom: 0;
+}
+
+#payment ul.payment_methods li label {
+	color: var(--ds-text);
+	font-weight: 600;
+}
+
+#payment ul.payment_methods li>img {
+	max-width: 100%;
+}
+
+#payment div.payment_box {
+	margin: 10px 0 0;
+	padding: 14px;
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: 8px;
+	color: var(--ds-muted);
+	font-size: 13px;
+}
+
+#payment div.payment_box::before {
+	display: none;
+}
+
+#payment .payment_box p {
+	margin: 0;
+	color: var(--ds-muted);
+	font-size: 13px;
+}
+
+#payment #place_order {
+	display: block;
+	width: 100%;
+	margin-top: 18px;
+	padding: 16px 18px;
+	border: 0;
+	border-radius: var(--ds-radius);
+	background: var(--ds-primary);
+	color: #fff;
+	font-family: var(--ds-font);
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-transform: none;
+	letter-spacing: normal;
+	transition: background 0.15s ease;
+}
+
+#payment #place_order:hover,
+#payment #place_order:focus {
+	background: var(--ds-primary-hover);
+	color: #fff;
+}
+
+#payment #place_order:disabled {
+	background: var(--ds-border);
+	color: var(--ds-muted);
+}
+
+/* Buttons and links in the checkout form ------------------------------- */
+
+.woocommerce form.checkout a.button,
+.woocommerce a.button,
+.woocommerce button.button,
+.woocommerce input.button,
+.woocommerce #respond input#submit {
+	min-height: 44px;
+	padding: 11px 18px;
+	border: 1px solid var(--ds-border);
+	border-radius: 8px;
+	background: var(--ds-surface-2);
+	color: var(--ds-text);
+	font-weight: 600;
+	text-transform: none;
+	letter-spacing: normal;
+	transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.woocommerce form.checkout a.button:hover,
+.woocommerce a.button:hover,
+.woocommerce button.button:hover,
+.woocommerce input.button:hover {
+	background: var(--ds-primary);
+	border-color: var(--ds-primary);
+	color: #fff;
+}
+
+/* Notices --------------------------------------------------------------- */
+
+.woocommerce-message,
+.woocommerce-info,
+.woocommerce-error,
+.wc-block-components-notice-banner {
+	margin: 0 0 20px;
+	padding: 13px 16px;
+	border: 1px solid var(--ds-border);
+	border-left-width: 4px;
+	border-radius: 8px;
+	background: var(--ds-surface);
+	color: var(--ds-text);
+	font-size: 14px;
+}
+
+.woocommerce-message,
+.wc-block-components-notice-banner.is-success {
+	border-left-color: var(--ds-success);
+}
+
+.woocommerce-info {
+	border-left-color: var(--ds-primary);
+}
+
+.woocommerce-error,
+.wc-block-components-notice-banner.is-error {
+	border-left-color: var(--ds-danger);
+}
+
+.wc-block-components-notice-banner__content {
+	color: var(--ds-text);
+}
+
+.woocommerce-message a,
+.woocommerce-info a,
+.woocommerce-error a {
+	color: var(--ds-primary);
+	text-decoration: underline;
+}
+
+/* -------------------------------------------------------------------------
+ * Order received - standalone confirmation
+ * ---------------------------------------------------------------------- */
+
+.ds-confirm {
+	max-width: 560px;
+	margin: 40px auto 72px;
+	padding: 30px;
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+	box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+	text-align: center;
+}
+
+.ds-confirm__mark {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 56px;
+	height: 56px;
+	margin: 0 auto 16px;
+	border-radius: 50%;
+	background: rgba(59, 130, 246, 0.16);
+	color: var(--ds-primary);
+	font-size: 26px;
+	line-height: 1;
+}
+
+.ds-confirm__title {
+	margin: 0 0 8px;
+	font-size: 26px;
+	font-weight: 700;
+}
+
+.ds-confirm__status {
+	display: inline-block;
+	margin: 0 0 22px;
+	padding: 7px 14px;
+	border-radius: 999px;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.ds-confirm__status--pending {
+	background: rgba(245, 158, 11, 0.16);
+	color: var(--ds-warning);
+}
+
+.ds-confirm__status--ok {
+	background: rgba(34, 197, 94, 0.16);
+	color: var(--ds-success);
+}
+
+.ds-confirm__status--error {
+	background: rgba(239, 68, 68, 0.16);
+	color: var(--ds-danger);
+}
+
+.ds-confirm__grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1px;
+	margin: 0 0 20px;
+	overflow: hidden;
+	border: 1px solid var(--ds-border);
+	border-radius: 8px;
+	background: var(--ds-border);
+	text-align: left;
+}
+
+.ds-confirm__row {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 13px 16px;
+	background: var(--ds-surface-2);
+}
+
+.ds-confirm__label {
+	color: var(--ds-muted);
+	font-size: 13px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.ds-confirm__value {
+	color: var(--ds-text);
+	font-size: 15px;
+	font-weight: 600;
+	text-align: right;
+	word-break: break-word;
+}
+
+.ds-confirm__note {
+	margin: 0 0 22px;
+	padding: 13px 16px;
+	border-left: 4px solid var(--ds-warning);
+	border-radius: 6px;
+	background: rgba(245, 158, 11, 0.1);
+	color: #fde68a;
+	font-size: 14px;
+	text-align: left;
+}
+
+.ds-confirm__note--ok {
+	border-left-color: var(--ds-success);
+	background: rgba(34, 197, 94, 0.1);
+	color: #bbf7d0;
+}
+
+.ds-confirm__note--error {
+	border-left-color: var(--ds-danger);
+	background: rgba(239, 68, 68, 0.1);
+	color: #fecaca;
+}
+
+.ds-confirm__closing {
+	margin: 0 0 22px;
+	color: var(--ds-muted);
+	font-size: 14px;
+}
+
+/* -------------------------------------------------------------------------
+ * Cart
+ * ---------------------------------------------------------------------- */
+
+.woocommerce table.shop_table {
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+	color: var(--ds-text);
+}
+
+.woocommerce table.shop_table th,
+.woocommerce table.shop_table td {
+	border-top: 1px solid var(--ds-border);
+	color: var(--ds-text);
+}
+
+.woocommerce .cart-collaterals .cart_totals {
+	padding: 20px;
+	background: var(--ds-surface);
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+}
+
+.woocommerce .cart-collaterals .cart_totals th,
+.woocommerce .cart-collaterals .cart_totals td {
+	color: var(--ds-text);
+}
+
+.woocommerce .coupon {
+	display: flex;
+	gap: 8px;
+}
+
+.woocommerce .coupon input.input-text {
+	background: var(--ds-surface-2);
+	border-color: var(--ds-border);
+	color: var(--ds-text);
+}
+
+/* -------------------------------------------------------------------------
+ * Responsive
+ * ---------------------------------------------------------------------- */
+
+@media (max-width: 782px) {
+	.ds-header {
+		padding: 12px 16px;
+	}
+
+	.page .wp-block-post-title {
+		font-size: 26px;
+	}
+
+	.deposit-site-form {
+		padding: 22px;
+	}
+
+	body.woocommerce-checkout .wp-block-post-content,
+	body.woocommerce-cart .wp-block-post-content {
+		padding: 16px 16px 56px;
+	}
+
+	#order_review {
+		padding: 16px;
+	}
+
+	#payment ul.payment_methods {
+		padding: 14px;
+	}
+
+	.woocommerce form.checkout .col-1,
+	.woocommerce form.checkout .col-2 {
+		float: none;
+		width: 100%;
+	}
+
+	.ds-confirm {
+		margin: 24px auto 56px;
+		padding: 22px 18px;
+	}
+
+	.ds-confirm__title {
+		font-size: 22px;
+	}
+
+	.ds-confirm__row {
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.ds-confirm__value {
+		text-align: left;
+	}
+
+	.woocommerce .coupon {
+		flex-direction: column;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * Narrow phones - keep the total side inset at ~14px so content uses more of
+ * the screen. Desktop and tablet spacing is left untouched.
+ * ---------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+	body {
+		--wp--style--root--padding-left: 14px;
+		--wp--style--root--padding-right: 14px;
+	}
+
+	.page .wp-block-post-title {
+		padding: 0;
+	}
+
+	.page .wp-block-post-content,
+	body.woocommerce-checkout .wp-block-post-content,
+	body.woocommerce-cart .wp-block-post-content {
+		padding-left: 0;
+		padding-right: 0;
+	}
+}
