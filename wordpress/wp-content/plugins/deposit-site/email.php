@@ -25,11 +25,11 @@ $is_paid       = in_array( $status, array( 'processing', 'completed' ), true );
 $is_failed     = in_array( $status, array( 'failed', 'cancelled' ), true );
 $name          = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
 $summary       = deposit_site_order_payment_summary( $order );
-$payment       = $order->get_payment_method_title();
+$payment       = trim( (string) $order->get_payment_method_title() );
 $created       = wc_format_datetime( $order->get_date_created() );
-$billing_email = $order->get_billing_email();
-$note          = (string) $order->get_customer_note();
-$store         = get_bloginfo( 'name' );
+$billing_email = trim( (string) $order->get_billing_email() );
+$note          = trim( (string) $order->get_customer_note() );
+$store         = trim( (string) get_bloginfo( 'name' ) );
 $na            = '—';
 
 $heading = $is_admin
@@ -102,9 +102,7 @@ $deposit_rows = array(
 					<td style="padding:8px 24px 20px;background-color:#ffffff;">
 						<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
 							<tr>
-								<td style="padding:8px 14px;background-color:<?php echo esc_attr( $status_bg ); ?>;border-radius:999px;color:<?php echo esc_attr( $status_fg ); ?>;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">
-									<?php echo esc_html( $status_label ); ?>
-								</td>
+								<td style="padding:8px 14px;background-color:<?php echo esc_attr( $status_bg ); ?>;border-radius:999px;color:<?php echo esc_attr( $status_fg ); ?>;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;"><?php echo esc_html( $status_label ); ?></td>
 							</tr>
 						</table>
 					</td>
@@ -114,12 +112,8 @@ $deposit_rows = array(
 						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #d7dce2;border-radius:8px;overflow:hidden;">
 							<?php foreach ( $deposit_rows as $label => $value ) : ?>
 								<tr>
-									<td width="45%" valign="top" style="padding:12px 14px;background-color:#f3f4f6;border-bottom:1px solid #d7dce2;color:#667085;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;">
-										<?php echo esc_html( $label ); ?>
-									</td>
-									<td width="55%" valign="top" style="padding:12px 14px;background-color:#ffffff;border-bottom:1px solid #d7dce2;color:#1f2933;font-size:15px;font-weight:600;text-align:right;word-break:break-word;">
-										<?php echo nl2br( esc_html( $value ) ); ?>
-									</td>
+									<td width="45%" valign="top" style="padding:12px 14px;background-color:#f3f4f6;border-bottom:1px solid #d7dce2;color:#667085;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;"><?php echo esc_html( $label ); ?></td>
+									<td width="55%" valign="top" style="padding:12px 14px;background-color:#ffffff;border-bottom:1px solid #d7dce2;color:#1f2933;font-size:15px;font-weight:600;text-align:right;word-break:break-word;"><?php echo nl2br( esc_html( $value ) ); ?></td>
 								</tr>
 							<?php endforeach; ?>
 						</table>
@@ -129,31 +123,15 @@ $deposit_rows = array(
 					<td style="padding:0 24px 20px;background-color:#ffffff;">
 						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
 							<tr>
-								<td style="padding:14px 16px;background-color:#f3f4f6;border-left:4px solid <?php echo esc_attr( $status_bg ); ?>;border-radius:6px;color:#1f2933;font-size:14px;line-height:1.5;">
-									<?php echo esc_html( $status_text ); ?>
-								</td>
+								<td style="padding:14px 16px;background-color:#f3f4f6;border-left:4px solid <?php echo esc_attr( $status_bg ); ?>;border-radius:6px;color:#1f2933;font-size:14px;line-height:1.5;"><?php echo esc_html( $status_text ); ?></td>
 							</tr>
 						</table>
 					</td>
 				</tr>
 				<tr>
 					<td style="padding:0 24px 28px;background-color:#ffffff;">
-						<p style="margin:0;color:#667085;font-size:13px;line-height:1.6;">
-							<?php if ( $is_admin ) : ?>
-								<?php esc_html_e( 'This is an automated notification about a deposit order placed in your store.', 'deposit-site' ); ?>
-							<?php else : ?>
-								<?php esc_html_e( 'Thank you for your deposit. Please keep this email for your records - it contains your order number.', 'deposit-site' ); ?>
-							<?php endif; ?>
-						</p>
-						<p style="margin:10px 0 0;color:#667085;font-size:13px;line-height:1.6;">
-							<?php
-							printf(
-								/* translators: %s: store name */
-								esc_html__( '%s - deposit orders', 'deposit-site' ),
-								esc_html( $store )
-							);
-							?>
-						</p>
+						<p style="margin:0;color:#667085;font-size:13px;line-height:1.6;"><?php echo $is_admin ? esc_html__( 'This is an automated notification about a deposit order placed in your store.', 'deposit-site' ) : esc_html__( 'Thank you for your deposit. Please keep this email for your records - it contains your order number.', 'deposit-site' ); ?></p>
+						<p style="margin:10px 0 0;color:#667085;font-size:13px;line-height:1.6;"><?php printf( /* translators: %s: store name */ esc_html__( '%s - deposit orders', 'deposit-site' ), esc_html( $store ) ); ?></p>
 					</td>
 				</tr>
 			</table>
