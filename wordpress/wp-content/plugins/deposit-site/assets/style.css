@@ -457,6 +457,12 @@ body.woocommerce-cart .wp-block-post-content {
   color: var(--ds-text);
 }
 
+/* The Deposit checkout has a single line item, so the tfoot Subtotal row is
+   identical to the product total and is dropped to keep the summary compact. */
+.deposit-site-checkout #order_review .woocommerce-checkout-review-order-table tr.cart-subtotal {
+  display: none;
+}
+
 /* Payment --------------------------------------------------------------- */
 
 #payment {

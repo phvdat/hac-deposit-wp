@@ -272,6 +272,54 @@ function deposit_site_set_billing_country($order, $data)
 add_filter('woocommerce_checkout_create_order', 'deposit_site_set_billing_country', 10, 2);
 
 /* -------------------------------------------------------------------------
+ * Deposit checkout order summary
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Whether the current cart is the single-line Deposit checkout.
+ */
+function deposit_site_is_deposit_checkout()
+{
+	if (! function_exists('WC') || ! WC()->cart || WC()->cart->is_empty()) {
+		return false;
+	}
+
+	$product_id = (int) get_option('deposit_site_product_id', 0);
+
+	foreach (WC()->cart->get_cart() as $cart_item) {
+		if (isset($cart_item['deposit_amount']) || ($product_id && (int) $cart_item['product_id'] === $product_id)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * The deposit is a single line item, so the "x 1" quantity is noise.
+ */
+function deposit_site_hide_checkout_quantity($quantity)
+{
+	if (deposit_site_is_deposit_checkout()) {
+		return '';
+	}
+	return $quantity;
+}
+add_filter('woocommerce_checkout_cart_item_quantity', 'deposit_site_hide_checkout_quantity');
+
+/**
+ * Tag the Deposit checkout so its redundant Subtotal row can be hidden.
+ */
+function deposit_site_checkout_body_class($classes)
+{
+	if (deposit_site_is_deposit_checkout()) {
+		$classes[] = 'deposit-site-checkout';
+	}
+	return $classes;
+}
+add_filter('body_class', 'deposit_site_checkout_body_class');
+
+/* -------------------------------------------------------------------------
  * Presentation
  * ---------------------------------------------------------------------- */
 
