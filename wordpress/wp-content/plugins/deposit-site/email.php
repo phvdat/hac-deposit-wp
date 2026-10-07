@@ -28,6 +28,7 @@ $summary       = deposit_site_order_payment_summary( $order );
 $payment       = $order->get_payment_method_title();
 $created       = wc_format_datetime( $order->get_date_created() );
 $billing_email = $order->get_billing_email();
+$note          = (string) $order->get_customer_note();
 $store         = get_bloginfo( 'name' );
 $na            = '—';
 
@@ -123,6 +124,24 @@ $deposit_rows = array(
 						</table>
 					</td>
 				</tr>
+				<?php if ( '' !== trim( $note ) ) : ?>
+				<tr>
+					<td style="padding:0 24px 20px;background-color:#ffffff;">
+						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #d7dce2;border-radius:8px;overflow:hidden;">
+							<tr>
+								<td style="padding:12px 14px;background-color:#f3f4f6;border-bottom:1px solid #d7dce2;color:#667085;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;">
+									<?php esc_html_e( 'Order notes (optional)', 'deposit-site' ); ?>
+								</td>
+							</tr>
+							<tr>
+								<td style="padding:12px 14px;background-color:#ffffff;color:#1f2933;font-size:14px;line-height:1.6;word-break:break-word;">
+									<?php echo nl2br( esc_html( $note ) ); ?>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<?php endif; ?>
 				<tr>
 					<td style="padding:0 24px 20px;background-color:#ffffff;">
 						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
