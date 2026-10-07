@@ -297,25 +297,28 @@ function deposit_site_enqueue_assets()
 add_action('wp_enqueue_scripts', 'deposit_site_enqueue_assets');
 
 /**
- * Uses the configured Redirect URL when set. Otherwise the deposit page falls
- * back to the site home, everything in the checkout flow falls back to the
- * deposit page.
+ * Back button target, based on the current page. Never uses browser history.
+ *
+ *  - cart / checkout -> Deposit home ("/")
+ *  - Deposit home    -> configured Redirect URL from WP-Admin
+ *  - anything else   -> Deposit home ("/")
  */
 function deposit_site_back_url()
 {
-	$redirect = deposit_site_redirect_url();
-
-	if ('' !== $redirect) {
-		return $redirect;
+	if (function_exists('is_checkout') && (is_checkout() || is_cart())) {
+		return home_url('/');
 	}
 
-	if (function_exists('is_checkout') && (is_checkout() || is_cart())) {
-		$page_id = (int) get_option('deposit_site_page_id', 0);
-		$url     = $page_id ? get_permalink($page_id) : '';
-		if ($url) {
-			return $url;
+	$page_id         = (int) get_option('deposit_site_page_id', 0);
+	$is_deposit_home = is_front_page() || ($page_id && is_page($page_id));
+
+	if ($is_deposit_home) {
+		$redirect = deposit_site_redirect_url();
+		if ('' !== $redirect) {
+			return $redirect;
 		}
 	}
+
 	return home_url('/');
 }
 
@@ -324,6 +327,20 @@ function deposit_site_render_back_header()
 	deposit_site_header(deposit_site_back_url());
 }
 add_action('wp_body_open', 'deposit_site_render_back_header');
+
+/**
+ * Send any front-end WordPress 404 to the Deposit home.
+ */
+function deposit_site_redirect_404()
+{
+	if (is_admin() || wp_doing_ajax() || ! is_404()) {
+		return;
+	}
+
+	wp_safe_redirect(home_url('/'));
+	exit;
+}
+add_action('template_redirect', 'deposit_site_redirect_404');
 
 /**
  * Drop every core/template-part block (site header, footer, navigation, cart
