@@ -205,6 +205,10 @@ add_filter('woocommerce_add_to_cart_validation', 'deposit_site_block_direct_add'
 
 function deposit_site_checkout_fields($fields)
 {
+	if (isset($fields['order']['order_comments'])) {
+		$fields['order']['order_comments']['placeholder'] = '';
+	}
+
 	// TEMPORARY DEBUG: keep WooCommerce's own billing fields so we can tell whether
 	// removing them made CardShield/PayPal draw its own billing address/name/ZIP block.
 	// Shipping stays off, as before. Set DEPOSIT_SITE_DEBUG_FULL_BILLING to false to revert.
