@@ -19,39 +19,51 @@ if ( ! isset( $order ) || ! $order instanceof WC_Order ) {
 	return;
 }
 
+$is_admin      = ! empty( $sent_to_admin );
 $status        = $order->get_status();
 $is_paid       = in_array( $status, array( 'processing', 'completed' ), true );
 $is_failed     = in_array( $status, array( 'failed', 'cancelled' ), true );
 $name          = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
-$amount        = html_entity_decode( wp_strip_all_tags( $order->get_formatted_order_total() ), ENT_QUOTES, 'UTF-8' );
+$summary       = deposit_site_order_payment_summary( $order );
 $payment       = $order->get_payment_method_title();
 $created       = wc_format_datetime( $order->get_date_created() );
 $billing_email = $order->get_billing_email();
 $store         = get_bloginfo( 'name' );
+$na            = '—';
 
-$heading = __( 'Deposit Order Received', 'deposit-site' );
+$heading = $is_admin
+	? __( 'New Deposit Order', 'deposit-site' )
+	: __( 'Deposit Order Received', 'deposit-site' );
 
 if ( $is_paid ) {
 	$status_label = __( 'Payment confirmed', 'deposit-site' );
 	$status_bg    = '#16a34a';
 	$status_fg    = '#ffffff';
-	$status_text  = __( 'Your payment has been received. This deposit is now confirmed.', 'deposit-site' );
+	$status_text  = $is_admin
+		? __( 'The deposit payment has been received and the order is confirmed.', 'deposit-site' )
+		: __( 'Your payment has been received. This deposit is now confirmed.', 'deposit-site' );
 } elseif ( $is_failed ) {
 	$status_label = __( 'Payment not completed', 'deposit-site' );
 	$status_bg    = '#dc2626';
 	$status_fg    = '#ffffff';
-	$status_text  = __( 'We could not confirm your payment for this deposit. Please contact us quoting your order number.', 'deposit-site' );
+	$status_text  = $is_admin
+		? __( 'The deposit payment was not completed for this order.', 'deposit-site' )
+		: __( 'We could not confirm your payment for this deposit. Please contact us quoting your order number.', 'deposit-site' );
 } else {
 	$status_label = __( 'Awaiting payment confirmation', 'deposit-site' );
 	$status_bg    = '#f59e0b';
 	$status_fg    = '#111111';
-	$status_text  = __( 'Your deposit order has been received. We are awaiting payment confirmation and will email you again as soon as it is confirmed.', 'deposit-site' );
+	$status_text  = $is_admin
+		? __( 'A deposit order has been placed and is awaiting payment confirmation.', 'deposit-site' )
+		: __( 'Your deposit order has been received. We are awaiting payment confirmation and will email you again as soon as it is confirmed.', 'deposit-site' );
 }
 
 $deposit_rows = array(
 	__( 'Order number', 'deposit-site' )  => '#' . $order->get_order_number(),
 	__( 'Date', 'deposit-site' )          => $created,
-	__( 'Amount', 'deposit-site' )        => $amount,
+	__( 'Total', 'deposit-site' )         => $summary['total'],
+	__( 'Fee', 'deposit-site' )           => $summary['fee'] ? $summary['fee'] : $na,
+	__( 'Net', 'deposit-site' )           => $summary['net'] ? $summary['net'] : $na,
 	__( 'Payment method', 'deposit-site' ) => $payment ? $payment : '-',
 	__( 'Name', 'deposit-site' )          => $name ? $name : '-',
 	__( 'Email', 'deposit-site' )         => $billing_email ? $billing_email : '-',
@@ -125,7 +137,11 @@ $deposit_rows = array(
 				<tr>
 					<td style="padding:0 24px 28px;background-color:#161b22;">
 						<p style="margin:0;color:#9aa4b2;font-size:13px;line-height:1.6;">
-							<?php esc_html_e( 'Thank you for your deposit. Please keep this email for your records - it contains your order number.', 'deposit-site' ); ?>
+							<?php if ( $is_admin ) : ?>
+								<?php esc_html_e( 'This is an automated notification about a deposit order placed in your store.', 'deposit-site' ); ?>
+							<?php else : ?>
+								<?php esc_html_e( 'Thank you for your deposit. Please keep this email for your records - it contains your order number.', 'deposit-site' ); ?>
+							<?php endif; ?>
 						</p>
 						<p style="margin:10px 0 0;color:#9aa4b2;font-size:13px;line-height:1.6;">
 							<?php

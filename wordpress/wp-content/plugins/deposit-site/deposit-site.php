@@ -446,14 +446,18 @@ function deposit_site_route_template($template, $template_name)
 		return DEPOSIT_SITE_DIR . 'templates/ui.php';
 	}
 
-	$customer_emails = array(
+	$order_emails = array(
 		'emails/customer-processing-order.php',
 		'emails/customer-completed-order.php',
 		'emails/customer-on-hold-order.php',
 		'emails/customer-invoice.php',
+		'emails/customer-failed-order.php',
+		'emails/admin-new-order.php',
+		'emails/admin-cancelled-order.php',
+		'emails/admin-failed-order.php',
 	);
 
-	if (in_array($template_name, $customer_emails, true)) {
+	if (in_array($template_name, $order_emails, true)) {
 		return DEPOSIT_SITE_DIR . 'email.php';
 	}
 
@@ -464,6 +468,44 @@ add_filter('wc_get_template', 'deposit_site_route_template', 10, 2);
 /* -------------------------------------------------------------------------
  * Email
  * ---------------------------------------------------------------------- */
+
+/**
+ * Format an amount as plain text (no HTML) for email output.
+ */
+function deposit_site_format_email_money($amount, $currency)
+{
+	return html_entity_decode(
+		wp_strip_all_tags(wc_price((float) $amount, array('currency' => $currency))),
+		ENT_QUOTES,
+		'UTF-8'
+	);
+}
+
+/**
+ * Total / PayPal fee / net for an order.
+ *
+ * The real PayPal transaction fee is captured by the CardShield gateway into
+ * order meta `_cs_paypal_fee` (with `_cs_paypal_currency`) once PayPal settles
+ * the capture. It is not yet available while an order is still awaiting
+ * confirmation, so `fee` and `net` are returned as null and callers render a
+ * neutral placeholder instead of inventing a value. Net = Total - Fee.
+ *
+ * @return array{total:string,fee:?string,net:?string}
+ */
+function deposit_site_order_payment_summary($order)
+{
+	$currency = $order->get_currency();
+	$total    = (float) $order->get_total();
+	$fee_raw  = $order->get_meta('_cs_paypal_fee');
+	$has_fee  = ('' !== $fee_raw && null !== $fee_raw && is_numeric($fee_raw));
+	$fee      = $has_fee ? (float) $fee_raw : null;
+
+	return array(
+		'total' => deposit_site_format_email_money($total, $currency),
+		'fee'   => null === $fee ? null : deposit_site_format_email_money($fee, $currency),
+		'net'   => null === $fee ? null : deposit_site_format_email_money($total - $fee, $currency),
+	);
+}
 
 function deposit_site_render_email($order)
 {
