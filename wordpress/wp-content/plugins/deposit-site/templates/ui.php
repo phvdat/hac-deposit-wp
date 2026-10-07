@@ -41,15 +41,15 @@ if ( ! function_exists( 'deposit_site_header' ) ) {
 		$decimals = deposit_site_decimals();
 		$symbol   = deposit_site_symbol();
 		$step     = number_format( pow( 10, -$decimals ), $decimals, '.', '' );
-		$min      = number_format( DEPOSIT_SITE_MIN_AMOUNT, $decimals, '.', '' );
-		$max      = number_format( DEPOSIT_SITE_MAX_AMOUNT, $decimals, '.', '' );
+		$min      = number_format( deposit_site_min_amount(), $decimals, '.', '' );
+		$max      = number_format( deposit_site_max_amount(), $decimals, '.', '' );
 
 		$limits = sprintf(
 			/* translators: 1: minimum amount, 2: maximum amount */
 			__( 'Minimum %1$s%2$s &middot; Maximum %1$s%3$s', 'deposit-site' ),
 			$symbol,
-			number_format( DEPOSIT_SITE_MIN_AMOUNT, $decimals ),
-			number_format( DEPOSIT_SITE_MAX_AMOUNT, $decimals )
+			number_format( deposit_site_min_amount(), $decimals ),
+			number_format( deposit_site_max_amount(), $decimals )
 		);
 
 		$messages = array(
@@ -58,12 +58,12 @@ if ( ! function_exists( 'deposit_site_header' ) ) {
 			'min'     => sprintf(
 				/* translators: %s: minimum amount */
 				__( 'The minimum deposit is %s.', 'deposit-site' ),
-				$symbol . number_format( DEPOSIT_SITE_MIN_AMOUNT, $decimals )
+				$symbol . number_format( deposit_site_min_amount(), $decimals )
 			),
 			'max'     => sprintf(
 				/* translators: %s: maximum amount */
 				__( 'The maximum deposit is %s.', 'deposit-site' ),
-				$symbol . number_format( DEPOSIT_SITE_MAX_AMOUNT, $decimals )
+				$symbol . number_format( deposit_site_max_amount(), $decimals )
 			),
 			'cart'    => __( 'We could not add the deposit to your cart. Please try again.', 'deposit-site' ),
 		);
