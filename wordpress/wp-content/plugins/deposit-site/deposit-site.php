@@ -276,6 +276,37 @@ function deposit_site_set_billing_country($order, $data)
 add_filter('woocommerce_checkout_create_order', 'deposit_site_set_billing_country', 10, 2);
 
 /* -------------------------------------------------------------------------
+ * PayPal checkout button timing
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Prime the CardShield PayPal session before the checkout form is rendered.
+ *
+ * CardShield resolves its PayPal proxy/shield URL on `wp_head` and stores it in
+ * the WooCommerce session; the gateway reads it back when it builds the PayPal
+ * button container. Block themes (Twenty Twenty-Five) render the block template
+ * — and therefore the checkout shortcode — *before* `wp_head` runs, so on a cold
+ * session the container is built while that session value is still empty and the
+ * PayPal button only shows up after a manual reload. Running the same setup one
+ * step earlier fixes the first paint; CardShield's own `wp_head` pass still
+ * prints its head tags.
+ */
+function deposit_site_prime_paypal_checkout_session()
+{
+	if (! function_exists('is_checkout') || ! is_checkout()) {
+		return;
+	}
+	if (! function_exists('cs_pp_action_wp_head') || ! function_exists('WC') || ! WC()->session) {
+		return;
+	}
+
+	ob_start();
+	cs_pp_action_wp_head();
+	ob_end_clean();
+}
+add_action('template_redirect', 'deposit_site_prime_paypal_checkout_session', 5);
+
+/* -------------------------------------------------------------------------
  * Deposit checkout order summary
  * ---------------------------------------------------------------------- */
 
