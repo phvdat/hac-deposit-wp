@@ -68,6 +68,7 @@ $deposit_rows = array(
 	__( 'Payment method', 'deposit-site' ) => $payment ? $payment : '-',
 	__( 'Name', 'deposit-site' )          => $name ? $name : '-',
 	__( 'Email', 'deposit-site' )         => $billing_email ? $billing_email : '-',
+	__( 'Order notes', 'deposit-site' )   => $note ? $note : $na,
 );
 ?>
 <!DOCTYPE html>
@@ -117,31 +118,13 @@ $deposit_rows = array(
 										<?php echo esc_html( $label ); ?>
 									</td>
 									<td width="55%" valign="top" style="padding:12px 14px;background-color:#ffffff;border-bottom:1px solid #d7dce2;color:#1f2933;font-size:15px;font-weight:600;text-align:right;word-break:break-word;">
-										<?php echo esc_html( $value ); ?>
+										<?php echo nl2br( esc_html( $value ) ); ?>
 									</td>
 								</tr>
 							<?php endforeach; ?>
 						</table>
 					</td>
 				</tr>
-				<?php if ( '' !== trim( $note ) ) : ?>
-				<tr>
-					<td style="padding:0 24px 20px;background-color:#ffffff;">
-						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #d7dce2;border-radius:8px;overflow:hidden;">
-							<tr>
-								<td style="padding:12px 14px;background-color:#f3f4f6;border-bottom:1px solid #d7dce2;color:#667085;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;">
-									<?php esc_html_e( 'Order notes (optional)', 'deposit-site' ); ?>
-								</td>
-							</tr>
-							<tr>
-								<td style="padding:12px 14px;background-color:#ffffff;color:#1f2933;font-size:14px;line-height:1.6;word-break:break-word;">
-									<?php echo nl2br( esc_html( $note ) ); ?>
-								</td>
-							</tr>
-						</table>
-					</td>
-				</tr>
-				<?php endif; ?>
 				<tr>
 					<td style="padding:0 24px 20px;background-color:#ffffff;">
 						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
